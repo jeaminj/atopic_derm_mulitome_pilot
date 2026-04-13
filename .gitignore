@@ -1,0 +1,13 @@
+# Large data files
+*.h5ad
+*.rds
+*.h5
+*.loom
+
+# R artifacts
+.Rhistory
+.RData
+.Rproj.user/
+
+# System files
+.DS_Store
