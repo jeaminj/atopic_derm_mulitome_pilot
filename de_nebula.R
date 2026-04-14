@@ -6,9 +6,6 @@ library(Seurat)
 library(nebula)
 library(dplyr)
 
-# --- Subset to Keratinocytes only ---
-sobj_kc <- subset(sobj_clean, Cell.type == "Keratinocytes")
-
 # --- Helper function for NB regression DE (diffxpy translation) ---
 run_nb_de_nebula <- function(sobj,
                              comparison,
@@ -65,9 +62,13 @@ run_nb_de_nebula <- function(sobj,
   return(results)
 }
 
-# --- Run: Healthy vs Lesional (KC only) ---
+# --- Run: Healthy vs Lesional (Keratinocyte cells only) ---
+
+# --- Subset ---
+sobj_kc <- subset(sobj_clean, Cell.type %in% c("Cornified keratinocytes", "Keratinocytes"))
+
 de_kc_lesional_nebula <- run_nb_de_nebula(
-  kc_lesional,
+  sobj_kc,
   comparison = list(ident.1 = "AD", ident.2 = "Healthy"),
   group_col  = "disease_status"
 )

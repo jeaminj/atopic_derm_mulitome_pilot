@@ -71,9 +71,11 @@ run_pseudobulk_de <- function(sobj,
   return(res)
 }
 
-# --- Run: Healthy vs Lesional (KC only) ---
+# --- Run: Healthy vs Lesional (Keratinocyte cells only) ---
+sobj_kc <- subset(sobj_clean, Cell.type %in% c("Cornified keratinocytes", "Keratinocytes"))
+
 de_kc_lesional <- run_pseudobulk_de(
-  kc_lesional,
+  sobj_kc,
   comparison = list(ident.1 = "AD", ident.2 = "Healthy"),
   group_col  = "disease_status"
 )
