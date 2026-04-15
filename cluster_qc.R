@@ -6,18 +6,22 @@ library(Seurat)
 library(clustree)
 library(ggplot2)
 library(patchwork)
-source("../helper_scripts/cell_cluster_flagging.R") # will use to clean the final umap 
 
 # Test multiple resolutions to find the most stable clustering
 # *** The data was uploaded with annotations already, so this step is not really necessary ***
 # Can still be useful
+set.seed(67)
+options(future.seed = TRUE)
+options(future.rng.onMisuse = "ignore")
 sobj_integrated <- FindClusters(sobj_integrated, 
-                                resolution = seq(0.1, 1.0, by = 0.1),
+                                resolution = seq(0.1, 0.6, by = 0.1),
+                                algorithm = 4,       # Leiden
+                                random.seed = 67,
                                 verbose = FALSE)
-SaveSeuratRds(sobj_clean, "sobj_cleaned.rds")
+
 # Visualize cluster stability across resolutions
 clustree(sobj_integrated, prefix = "RNA_snn_res.")
-ggsave("clustree_postIntegration.png", height = 10, width = 10, dpi = 300)
+ggsave("03a_clustree_postIntegration.png", height = 10, width = 10, dpi = 300)
 
 
 # PLOTS --- using the provided cell type annotations ---
@@ -37,6 +41,7 @@ cell_type_cols <- c(
   "Macrophages"             = "#F4B183",
   "Neutrophils"             = "#92D050",
   "Mast"                    = "#FF7F7F",
+  "B cell"                  = "#B4A7D6",  # lavender
   "Plasma"                  = "#C9956C",
   "T/NK"                    = "#FFB6C1"
 )
@@ -55,6 +60,7 @@ cell_type_order <- c(
   "Macrophages",
   "Neutrophils",
   "Mast",
+  "B cell",
   "Plasma",
   "T/NK"
 )
@@ -84,39 +90,52 @@ p_celltypes <- DimPlot(sobj_integrated,
         legend.margin = margin(t = 10)) 
 
 p_celltypes # note cells (namely keratinocytes among its non-dominant cluster)
-ggsave("celltype_umap_uncleaned.png", width = 10, height = 8, dpi = 300)
+ggsave("03b_umap_byBroadCelltype_unclean.png", width = 10, height = 8, dpi = 300)
 
 # Going to 'clean' the clustering based on distance from dominant cluster centroid:
 
-# Using the imported helper script:
+
+
+# flags cells by sd threshold from their main cluster centroid 
+source("../helper_scripts/cell_cluster_flag_byCentroidSD.R") #
 sobj_flagged <- flag_misassigned_by_umap(sobj_integrated,
                                          reduction = "umap_harmony",
                                          cell_type_col = "Cell.type",
-                                         sd_threshold = 2)
+                                         sd_threshold = 4)
+# flags cells by QC metrics
+source("../helper_scripts/cell_cluster_flag_byQC.R")
+sobj_flagged <- calculate_qc_outliers(sobj_flagged, nmads = 3)
+
 # --- Visualize before removing ---
-p_celltypes <- DimPlot(sobj_integrated,
-                       reduction = "umap_harmony",
-                       group.by = "Cell.type", 
-                       cols = cell_type_cols, pt.size = 0.3) + 
-  ggtitle("Broad cell states") +
+
+p_flagged_sd <- DimPlot(sobj_flagged,
+                        reduction = "umap_harmony",
+                        group.by = "removal_status",
+                        cols = c("Far from centroid" = "red", "Within 4 SD" = "lightgrey"),
+                        order = "To be removed", pt.size = 0.3) +
+  ggtitle("Cells flagged by SD") +
   theme(axis.text = element_blank(), axis.ticks = element_blank(),
         panel.grid = element_blank(), panel.border = element_blank(),
         axis.line.x = element_line(arrow = arrow(length = unit(0.3, "cm"), ends = "last")),
         axis.line.y = element_line(arrow = arrow(length = unit(0.3, "cm"), ends = "last")))
 
-p_removal <- DimPlot(sobj_flagged,
+
+p_flagged_mad <- DimPlot(sobj_flagged,
                      reduction = "umap_harmony",
-                     group.by = "removal_status",
-                     cols = c("To be removed" = "red", "Keep" = "lightgrey"),
+                     group.by = "qc_outlier_reason",
+                     cols = c("Potential Doublet" = "red", "Pass QC Metrics" = "lightgrey",
+                              "High Mitochondrial" = "purple", "Low Features" = "blue",
+                              "Multiple QC Failures" = "orange"),
                      order = "To be removed", pt.size = 0.3) +
-  ggtitle("Cells flagged for removal (all cell types)") +
+  ggtitle("Cells flagged by MAD") +
   theme(axis.text = element_blank(), axis.ticks = element_blank(),
         panel.grid = element_blank(), panel.border = element_blank(),
         axis.line.x = element_line(arrow = arrow(length = unit(0.3, "cm"), ends = "last")),
         axis.line.y = element_line(arrow = arrow(length = unit(0.3, "cm"), ends = "last")))
 
-p_celltypes | p_removal
-ggsave("celltype_umap_flagged.png", width = 15, height = 8, dpi = 300)
+p_flagged_sd | p_flagged_mad
+
+ggsave("03c_umap_flagged_cells_to_review.png", width = 15, height = 8, dpi = 300)
 
 # --- Remove after visual confirmation ---
 cells_to_keep <- colnames(sobj_integrated)[!sobj_flagged$is_misassigned]
@@ -151,7 +170,7 @@ disease_col <- c("Healthy"  = "#449867",
 p_celltype <- DimPlot(sobj_clean, reduction = "umap_harmony", group.by = "Cell.type",
                       cols = cell_type_cols, pt.size = 0.3) +
   labs(color = "Broad cell types") + umap_theme
-ggsave("umap_cleaned_byCellType.png", width = 10, height = 8, dpi = 300)
+ggsave("03d_umap_cleaned_byBroadCellType.png", width = 10, height = 8, dpi = 300)
 
 # --- Biological variables ---
 p_disease <- DimPlot(sobj_clean, reduction = "umap_harmony", group.by = "disease_status",
@@ -165,7 +184,7 @@ p_lesional <- DimPlot(sobj_clean, reduction = "umap_harmony", group.by = "lesion
 p_disease_lesional <- DimPlot(sobj_clean, reduction = "umap_harmony", cols = disease_col,
                               group.by = "disease_lesional", pt.size = 0.2) +
   labs(color = "Disease / Lesional") + umap_theme
-ggsave("umap_cleaned_byDisease.png", width = 10, height = 8, dpi = 300)
+ggsave("03e_umap_cleaned_byDisease.png", width = 10, height = 8, dpi = 300)
 
 # --- Technical / batch variables ---
 p_batch <- DimPlot(sobj_clean, reduction = "umap_harmony", group.by = "batch",
@@ -194,8 +213,14 @@ p_sex <- DimPlot(sobj_clean, reduction = "umap_harmony", group.by = "sex",
   labs(color = "Sex") + umap_theme
 
 p_phase <- DimPlot(sobj_clean, reduction = "umap_harmony", group.by = "phase",
-                   cols = phase_cols, pt.size = 0.3) +
+                   cols = phase_cols, pt.size = 0.3, alpha = 0.7) +
   labs(color = "Cell cycle phase") + umap_theme
+ggsave("03f_umap_cleaned_byPhase.png", width = 10, height = 8, dpi = 300)
+p_phase_split <- DimPlot(sobj_clean, reduction = "umap_harmony", group.by = "disease_status",
+                         split.by = "phase",
+                         cols = disease_cols, pt.size = 0.3) +
+  labs(color = "Status") + umap_theme
+ggsave("03f2_umap_cleaned_byPhase_split.png", width = 14, height = 10, dpi = 300)
 
 # --- Combined layout ---
 wrap_plots(
@@ -207,6 +232,6 @@ wrap_plots(
   plot_annotation(title = "Post-cleaning UMAP overview",
                   theme = theme(plot.title = element_text(size = 16, hjust = 0.5, face = "bold")))
 
-ggsave("umap_cleaned_byVariables_overview.png", width = 10, height = 8, dpi = 300 )
+ggsave("03g_umap_cleaned_byVariables_overview.png", width = 10, height = 8, dpi = 300 )
 
 # End of script [4], see script [5] for differential expression, trajectories, and other downstream analysis

@@ -24,6 +24,9 @@ sobj_layersjoined <- NormalizeData(sobj_layersjoined,
                                    normalization.method = "LogNormalize", 
                                    verbose = FALSE)
 
+# Uncomment line below and rerun normalization if needed
+#options(future.globals.maxSize = 8000 * 1024^2) # increased RAM limit to 8gb
+
 # Identify the top 2000 highly variable features using variance-stabilizing transformation (VST).
 # These genes drive biological variability and will be used for PCA and downstream clustering.
 sobj_layersjoined <- FindVariableFeatures(sobj_layersjoined, 
@@ -41,7 +44,7 @@ top_vFeatures_plot <- LabelPoints(plot = top_vFeatures_plot,
                                   xnudge = 0.1, ynudge = 0,
                                   max.overlaps = 20)
 top_vFeatures_plot
-ggsave("top_vFeatures.png", width = 10, height = 8, dpi = 300)
+ggsave("02a_top_vFeatures.png", width = 10, height = 8, dpi = 300)
 
 # Scale data to zero mean and unit variance across cells.
 # This ensures no single gene dominates PCA due to high expression magnitude.
@@ -53,9 +56,8 @@ sobj_layersjoined <- RunPCA(sobj_layersjoined, npcs = 50, verbose = FALSE)
 
 # Visualize variance explained per PC to determine how many PCs to retain.
 elbow_plt <- ElbowPlot(sobj_layersjoined, ndims = 50)
-# 
-elbow_plt
-ggsave("elbow_plot.png", elbow_plt, width = 10, height = 7, dpi = 300)
+
+ggsave("02b_elbow_plot.png", elbow_plt, width = 10, height = 7, dpi = 300)
 
 # Embed cells in 2D using UMAP for visualization, using the top 30 PCs as input.
 # Adjust dims based on ElbowPlot inspection (e.g., 1:20 if elbow is at ~20).
@@ -64,7 +66,9 @@ sobj_layersjoined <- RunUMAP(sobj_layersjoined, dims = 1:30, reduction = "pca", 
 # checkpoint; save normalized sobj to file
 SaveSeuratRds(sobj_layersjoined, "sobj_normalized.rds")
 
-sobj_layersjoined <- LoadSeuratRds("02_norm_integ/sobj_normalized.rds")
+# Uncomment if needed 
+#sobj_layersjoined <- LoadSeuratRds("02_norm_integ/sobj_normalized.rds")
+
 
 # This next section is to assess batch effects and determine if integration is necessary
 # --- Consistent color palettes for biologically confounded variables ---
@@ -76,13 +80,19 @@ lesional_cols <- c("Yes" = "#E05C5C", "No"      = "#4DABB5")
 
 # Shared colors between sample_name and ind_id based on donor identity
 shared_cols <- c(
+  # - sample_name -
+  "040219_1-H1"    = "#2A5783",
   "040219_2-H2"    = "#4DABB5",  # Healthy2
   "101918H51-H51"  = "#A66BB5",  # Healthy5
+  "101818L1-L1"    = "#E6A316",
   "052519L1-L1"    = "#E05C5C",  # BCH04
   "100219L-L"      = "#6B9E3F",  # BCH05
   
+  # - ind_id -
+  "Healthy1" = "#2A5783",
   "Healthy2" = "#4DABB5",
   "Healthy5" = "#A66BB5",
+  "BCH01"    = "#E6A316",
   "BCH05"    = "#6B9E3F",
   "BCH04"    = "#E05C5C"
 )
@@ -107,7 +117,7 @@ p9 <- DimPlot(sobj_layersjoined, group.by = "lesional",       cols = lesional_co
 
 wrap_plots(list(p1, p2, p3, p4, p5, p6, p7, p8, p9), ncol = 3)
 
-ggsave("batch_umaps.png", width = 12, height = 9, dpi = 300)
+ggsave("02c_umaps_before_integ.png", width = 12, height = 9, dpi = 300)
 # ---
 
 # Integration ---------------------
@@ -142,7 +152,7 @@ p9 <- DimPlot(sobj_integrated, reduction = "umap_harmony", group.by = "lesional"
 
 wrap_plots(list(p1, p2, p3, p4, p5, p6, p7, p8, p9), ncol = 3)
 
-ggsave("batch_umaps_postIntegration.png", width = 12, height = 9, dpi = 300)
+ggsave("02d_umaps_postIntegration.png", width = 12, height = 9, dpi = 300)
 
 # Once integration is confirmed to have worked, continue with standard workflow
 # --- k-NN graph with k=15 on 50 PCs ---
@@ -158,9 +168,11 @@ sobj_integrated <- FindNeighbors(sobj_integrated,
 # Equivalent to sc.tl.leiden
 # Seurat's default is Louvain (algorithm=1); Leiden requires algorithm=4
 # install.packages("leidenAlg") if not already installed
+set.seed(67)
 sobj_integrated <- FindClusters(sobj_integrated,
                                 resolution = 0.4,
                                 algorithm = 4,       # Leiden
+                                random.seed = 67,
                                 verbose = FALSE)
 
 SaveSeuratRds(sobj_integrated, "sobj_integrated.rds")

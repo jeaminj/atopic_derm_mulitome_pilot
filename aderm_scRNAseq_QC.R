@@ -85,7 +85,7 @@ p_ct_stack <- ggplot(metadata, aes(x = ind_id, fill = Cell.type)) +
   theme_minimal() +
   labs(title = "Cell Type Proportion per Sample", y = "Proportion") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-p_ct_stack
+
 ggsave("01d_celltype_proportions_custom_colors.png", p_ct_stack, width = 12, height = 7)
 
 
