@@ -49,7 +49,7 @@ seuratV5_to_anndata <- function(sobj,
   invisible(h5ad_path)
 }
 
-#TODO: add subset argument to function, null if null
+#TODO: add subset argument to function
 # Usage example:
 # sobj_kc <- subset(sobj_kc_clean, Cell.type %in% c("Cornified keratinocytes", "Keratinocytes"))
 seuratV5_to_anndata(sobj_kc_clean, output_path = "../04_downstream_analysis/pseudotime/sobj_kc_clean")
