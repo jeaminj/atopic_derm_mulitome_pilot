@@ -3,8 +3,8 @@
 # Usage: source("helpers/sobj_to_anndata.R")
 # NOTE: Won't work with Seurat5 objects; use sobjV5_to_anndata.R instead !!
 # =============================================================================
-# TO-DO; test this works lol
 
+# TO-DO: confirm all data is properly carried over
 seurat_to_anndata <- function(sobj,
                               output_path,
                               assay    = "RNA",
@@ -54,7 +54,7 @@ seurat_to_anndata <- function(sobj,
     warning("Conversion may have failed — .h5ad file not found at expected path.")
   }
   
-  invisible(h5ad_path)  # return path invisibly for use in pipelines
+  invisible(h5ad_path)  # returns path invisibly for use in pipelines
 }
 
 

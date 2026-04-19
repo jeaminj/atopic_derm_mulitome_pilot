@@ -1,4 +1,4 @@
-# Script [2]: QC - atopic dermatitis-mutliome project
+# Script [3]: Normalizing and Integrating - atopic dermatitis-mutliome project
 library(Seurat)
 library(ggplot2)
 library(patchwork)

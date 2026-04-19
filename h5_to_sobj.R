@@ -10,10 +10,10 @@ wd <- "~/projects/aderm_multiome/samples_to_use"
 convert_h5ad_to_seurat <- function(input_path, output_path, min_features = 100, min_cells = 3) {
   adata <- anndata::read_h5ad(input_path)
   
-  # Use Matrix::t for sparse-friendly transposing if possible to save memory
+  # Uses Matrix::t for sparse-friendly transposing to save memory
   counts <- Matrix::t(adata$X)
   
-  obj <- CreateSeuratObject(
+  obj <- CreateSeuratObject( 
     counts       = counts,
     meta.data    = adata$obs, 
     min.features = min_features,
@@ -32,7 +32,7 @@ h5ad_files <- list.files(
   full.names = TRUE
 )
 
-# Batch process files; skips existing .rds files to prevent redundant processing
+# Batch process files; skips existing .rds files to prevent redundant processing of samples from previous runs
 lapply(h5ad_files, function(f) {
   out_path <- sub("\\.h5ad$", ".rds", f)
   
@@ -42,3 +42,5 @@ lapply(h5ad_files, function(f) {
     message("Skipping existing file: ", basename(out_path))
   }
 })
+
+# See script [2] for sanity check of converted objects and initial quality control

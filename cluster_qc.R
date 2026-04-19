@@ -1,3 +1,5 @@
+# Script [4]: Assessing cluster quality and resolution - atopic dermatitis-mutliome project
+
 # will also act as the output dir
 wd="~/projects/aderm_multiome/03_cluster_qc"
 setwd(wd)
@@ -66,7 +68,6 @@ cell_type_order <- c(
 )
 
 sobj_integrated$Cell.type <- factor(sobj_integrated$Cell.type, levels = cell_type_order)
-
 
 p_celltypes <- DimPlot(sobj_integrated, 
                        reduction = "umap_harmony", 

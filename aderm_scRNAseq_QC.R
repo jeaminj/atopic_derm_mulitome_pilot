@@ -94,4 +94,4 @@ ggsave("01d_celltype_proportions_custom_colors.png", p_ct_stack, width = 12, hei
 SaveSeuratRds(merged_sobj, paste0(wd,"/","sobj_merged_filtered.rds"))
 
 
-# See script [3] for continuation ~~~
+# See script [3] for continuation with Normalization and Integration ~~~
