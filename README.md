@@ -1,7 +1,6 @@
-Small scale reproduction of the following study:
-https://www.biorxiv.org/content/10.1101/2023.10.29.563503v2
+A small scale reproduction of the following study:
+[Multi-modal skin atlas identifies a multicellular immune-stromal community associated with disrupted cornification and specific T cell expansion in atopic dermatitis](https://www.nature.com/articles/s41467-026-69587-7#Sec16)
 
-Intiial Commit: intial scRNAseq qc and analysis
 
-Full work is in progress 
+Full reproduction currently in progress (Human Healthy and Lesional sample subset only [scRNA, scATAC, TCRs)
 
